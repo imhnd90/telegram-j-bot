@@ -8,6 +8,10 @@ from telethon.tl.types import MessageMediaPhoto, MessageEntityTextUrl, MessageEn
 # --- CONFIGURATION ---
 API_ID = 35769422  # <-- Your API ID
 API_HASH = '9f5fdb40f517efb629843d96ddaa5a71'  # <-- Your API Hash
+# 🌟 PASTE YOUR GREEN-API CREDENTIALS HERE:
+GREEN_API_ID = '710522728838'            # <-- Paste your exact ID instance numbers here
+GREEN_API_TOKEN = '6dbb40f208984ebab3908788583748b822b453ad99bb487da5'    # <-- Paste your long apiTokenInstance string here
+WHATSAPP_CHAT_ID = '120363430663266458'   # <-- Paste your copied group/community ID ending in @g.us here
 
 SOURCE_CHANNELS = [
     # Your current existing channels
