@@ -10,13 +10,20 @@ API_ID = 35769422  # <-- Your API ID
 API_HASH = '9f5fdb40f517efb629843d96ddaa5a71'  # <-- Your API Hash
 
 SOURCE_CHANNELS = [
+    # Your current existing channels
     '@ewdifh',
     '@cd4cd',
     '@teleworksjobs',
     '@wadhefadotcom',
     '@i8mhnd',
-    '@saudijobs24'
+    
+    # 🌟 NEW: Master Job & Labor Market News Channels
+    '@jobs4ksa',
+    '@hrgksa',
+    '@saudijobs24',
+    '@jobs2ksa'
 ]
+
 
 DESTINATION_CHANNEL = '@sammhnd'  
 
