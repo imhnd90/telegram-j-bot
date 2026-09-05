@@ -2,49 +2,35 @@ import re
 import os
 import threading
 import time
-import requests  # 🌟 Essential for sending the free WhatsApp cloud payload
-from http.server import BaseHTTPRequestHandler, HTTPServer
+import requests  
 from telethon import TelegramClient, events
 from telethon.tl.types import MessageMediaPhoto, MessageEntityTextUrl, MessageEntityUrl
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # --- CONFIGURATION ---
 API_ID = 35769422  
 API_HASH = '9f5fdb40f517efb629843d96ddaa5a71'  
 
-# 🌟 GREEN-API WHATSAPP CREDENTIALS (FILL THESE WITH YOUR DATA)
+# 🌟 GREEN-API WHATSAPP CREDENTIALS
 GREEN_API_ID = '710522728838'            
-GREEN_API_TOKEN ='6dbb40f208984ebab3908788583748b822b453ad99bb487da5'    
-WHATSAPP_CHAT_ID = '120363430663266458@g.us'   
+GREEN_API_TOKEN = '6dbb40f208984ebab3908788583748b822b453ad99bb487da5'    
+WHATSAPP_CHAT_ID = '120363428984270611@g.us'   
 
 SOURCE_CHANNELS = [
-    '@ewdifh',
-    '@cd4cd',
-    '@teleworksjobs',
-    '@wadhefadotcom',
-    '@i8mhnd',
-    '@jobs4ksa',
-    '@hrgksa',
-    '@saudijobs24',
-    '@jobs2ksa'
+    '@ewdifh', '@cd4cd', '@teleworksjobs', '@wadhefadotcom', '@i8mhnd',
+    '@jobs4ksa', '@hrgksa', '@saudijobs24', '@jobs2ksa'
 ]
 
 DESTINATION_CHANNEL = '@sammhnd'  
 
 JOB_KEYWORDS = [
-    # --- Breaking News & Regulatory Filters (Arabic & English) ---
     'عاجل', 'رسميا', 'رسمياً', 'وزارة', 'الوزارة', 'الموارد البشرية', 'قرارات', 'قرار', 'توطين', 
     'سعودة', 'هدف', 'صندوق', 'بيان رسمي', 'تعلن', 'يعلن', 'أعلنت', 'اعلت', 'mhrsd', 'hrdf', 'qiwa',
-    
-    # --- Corporate Entities & Major Giga-Projects ---
     'شركة', 'أرامكو', 'ارامكو', 'stc', 'الاتصالات', 'نيوم', 'neom', 'سابك', 'البحر الأحمر', 
     'روشن', 'المربع الجديد', 'بنك', 'مصرف', 'الراجحي', 'الأهلي', 'طيران', 'الخطوط', 'مستشفى',
-    
-    # --- General Employment & Vacancy Types ---
     'وظيفة', 'وظايف', 'وظائف', 'شواغر', 'شاغر', 'شاغرة', 'توظيف', 'تدريب', 'فرصة عمل', 'فرص عمل', 
     'مطلوب', 'مطلوبة', 'برنامج', 'حكومي', 'اداري', 'إداري', 'استقبال', 'خدمة عملاء', 'مبيعات',
     'hiring', 'vacancy', 'job', 'jobs', 'internship', 'career', 'careers', 'apply', 'recruitment',
-
-    # --- On-Site Technical, Field & Corporate Roles ---
     'مهندس', 'هندسة', 'محاسب', 'محاسبة', 'قانوني', 'محامي', 'تقنية', 'معلومات', 'برمجة', 'مطور',
     'امن سيبراني', 'ذكاء اصطناعي', 'شبكات', 'سلاسل الإمداد', 'لوجستي', 'مستودع', 'مشتريات',
     'engineer', 'accounting', 'finance', 'logistics', 'procurement', 'developer', 'python'
@@ -52,8 +38,9 @@ JOB_KEYWORDS = [
 
 PROMO_KEYWORDS = []
 
-# 🌟 ANTI-DUPLICATE CACHE DICTIONARY
-processed_messages_cache = set()
+# 🌟 DUAL MEMORY CACHE (TRACKS TEXT AND UNIQUE APPLICATION LINKS)
+processed_text_cache = set()
+processed_links_cache = set()
 cache_lock = threading.Lock()
 
 client = TelegramClient('render_cloud_session', API_ID, API_HASH)
@@ -65,27 +52,23 @@ class DummyServer(BaseHTTPRequestHandler):
         self.send_header("Content-Length", "18")
         self.end_headers()
         self.wfile.write(b"Bot is active 24/7")
-
-    def log_message(self, format, *args):
-        return
+    def log_message(self, format, *args): return
 
 def run_web_server():
-    """Runs a tiny web server in the background to satisfy Render's port scan checks"""
     port = int(os.environ.get("PORT", 10000))
     server = HTTPServer(('0.0.0.0', port), DummyServer)
-    print(f"🌍 Internal web server started on port {port} for Render health checks.")
     server.serve_forever()
 
 def clean_old_cache():
-    """Flushes the duplicate storage set every hour to keep server RAM fast and minimal"""
+    """Flushes background tracking caches every hour to preserve server memory"""
     while True:
         time.sleep(3600)
         with cache_lock:
-            processed_messages_cache.clear()
-            print("🧹 Internal duplicate message tracking cache cleared successfully.")
+            processed_text_cache.clear()
+            processed_links_cache.clear()
+            print("🧹 Cache memory flushed successfully.")
 
 def send_to_whatsapp(text_message):
-    """Dispatches the clean text update to your WhatsApp Community completely for free"""
     url = f"https://green-api.com{GREEN_API_ID}/sendMessage/{GREEN_API_TOKEN}"
     payload = {
         "chatId": WHATSAPP_CHAT_ID,
@@ -94,95 +77,104 @@ def send_to_whatsapp(text_message):
     headers = {'Content-Type': 'application/json; charset=utf-8'}
     try:
         response = requests.post(url, json=payload, headers=headers, timeout=15)
-        if response.status_code == 200:
-            print("🟢 Successfully broadcasted to your WhatsApp Community!")
-        else:
-            print(f"⚠️ WhatsApp API returned an issue: {response.status_code} - {response.text}")
+        print(f"📡 WhatsApp API Router Status Code: {response.status_code}")
     except Exception as e:
-        print(f"❌ Failed to reach Green-API cloud router: {e}")
+        print(f"❌ Failed to reach Green-API gateway: {e}")
 
-def reformat_text(raw_text):
-    """Dynamically structures text into an explicit Job Alert or News Flash layout"""
+def reformat_text(raw_text, mode="telegram"):
     clean_text = re.sub(r'[*_`~]', '', raw_text).strip()
     text_lower = clean_text.lower()
     news_triggers = ['عاجل', 'رسميا', 'رسمياً', 'قرارات', 'قرار', 'توطين', 'سعودة', 'الموارد البشرية']
     
     if any(trigger in text_lower for trigger in news_triggers):
-        header_title = "🚨 **تحديث سوق العمل | MARKET NEWS FLASH**"
+        title_tg = "🚨 **تحديث سوق العمل | MARKET NEWS FLASH**"
+        title_wa = "🚨 *تحديث سوق العمل | MARKET NEWS FLASH*"
     else:
-        header_title = "💼 **فرصة عمل جديدة | NEW JOB OPPORTUNITY**"
+        title_tg = "💼 **فرصة عمل جديدة | NEW JOB OPPORTUNITY**"
+        title_wa = "💼 *فرصة عمل جديدة | NEW JOB OPPORTUNITY*"
     
-    arranged_template = (
-        f"{header_title}\n"
-        "📢 **قناة: سم مع مهند**\n"
-        "──────────────────────\n\n"
-        f"{clean_text}\n\n"
-        "──────────────────────\n"
-        "🚀 تابعوا **سم مع مهند** للمزيد من الفرص والأخبار اليومية!\n\n"
-        "#وظائف #وظائف_السعودية #أخبار_التوظيف #توظيف #سم_مع_مهند"
-    )
-    return arranged_template
+    if mode == "whatsapp":
+        return (
+            f"{title_wa}\n"
+            "📢 *قناة: سم مع مهند*\n"
+            "━━━━━━━━━━━━━━━━━━━\n\n"
+            f"{clean_text}\n\n"
+            "━━━━━━━━━━━━━━━━━━━\n"
+            "🚀 تابعوا *سم مع مهند* للمزيد من الفرص والأخبار اليومية!\n\n"
+            "#وظائف #وظائف_السعودية #أخبار_التوظيف #توظيف #سم_مع_مهند"
+        )
+    else:
+        return (
+            f"{title_tg}\n"
+            "📢 **قناة: سم مع مهند**\n"
+            "──────────────────────\n\n"
+            f"{clean_text}\n\n"
+            "──────────────────────\n"
+            "🚀 تابعوا **سم مع مهند** للمزيد من الفرص والأخبار اليومية!\n\n"
+            "#وظائف #وظائف_السعودية #أخبار_التوظيف #توظيف #سم_مع_مهند"
+        )
 
 @client.on(events.NewMessage(chats=SOURCE_CHANNELS))
 async def filter_and_forward(event):
     original_text = event.message.message
-    if not original_text:
-        return
+    if not original_text: return
 
-    # 🌟 ANTI-DUPLICATE INTERCEPTION STRATEGY
-    # Formats text structure to check if this core layout has been processed recently
+    # 1. Check text-based duplicates
     simplified_text = "".join(original_text.split()).lower()[:150]
-    
     with cache_lock:
-        if simplified_text in processed_messages_cache:
-            print("⏳ Duplicate post intercepted from secondary source channel. Skipping...")
+        if simplified_text in processed_text_cache:
+            print("⏳ Text-based duplicate intercepted. Skipping...")
             return
-        processed_messages_cache.add(simplified_text)
 
-    searchable_content = [original_text.lower()]
-
+    # 2. 🌟 Smart Check: Extract links to catch rewritten duplicates
+    extracted_urls = []
     if event.message.entities:
         for entity in event.message.entities:
             if isinstance(entity, MessageEntityTextUrl):
-                searchable_content.append(entity.url.lower())
+                extracted_urls.append(entity.url.lower())
             elif isinstance(entity, MessageEntityUrl):
                 offset = entity.offset
                 length = entity.length
                 url_text = original_text[offset:offset+length]
-                searchable_content.append(url_text.lower())
+                extracted_urls.append(url_text.lower())
 
+    # Skip external tracking steps or channel links to purely catch core application endpoints
+    valid_job_links = [u for u in extracted_urls if "t.me" not in u and "whatsapp" not in u]
+
+    with cache_lock:
+        # If any found application link has been processed recently, skip the post completely!
+        for link in valid_job_links:
+            if link in processed_links_cache:
+                print(f"⏳ Link-based duplicate caught ({link}). Skipping...")
+                return
+        
+        # Lock strings into cache sets
+        processed_text_cache.add(simplified_text)
+        for link in valid_job_links:
+            processed_links_cache.add(link)
+
+    searchable_content = [original_text.lower()] + extracted_urls
     combined_search_text = " ".join(searchable_content)
 
-    # MATCH KEYWORD FILTER
     if any(job in combined_search_text for job in JOB_KEYWORDS):
-        formatted_text = reformat_text(original_text)
-        
-        # 1. Dispatch Post to Your Telegram Destination Channel
+        tg_text = reformat_text(original_text, mode="telegram")
         if event.message.media and isinstance(event.message.media, MessageMediaPhoto):
-            await client.send_message(DESTINATION_CHANNEL, formatted_text, file=event.message.media)
-            print("📸 Successfully formatted and posted an image-job to Telegram!")
+            await client.send_message(DESTINATION_CHANNEL, tg_text, file=event.message.media)
         else:
-            await client.send_message(DESTINATION_CHANNEL, formatted_text, link_preview=False)
-            print("📝 Successfully formatted and posted a text-job to Telegram!")
+            await client.send_message(DESTINATION_CHANNEL, tg_text, link_preview=False)
         
-        # 2. 🌟 Dispatch Same Post Natively to Your WhatsApp Community
-        # Replaces dual asterisks (Telegram style) with single ones (WhatsApp style bolding)
-        whatsapp_clean = formatted_text.replace('**', '*') 
-        threading.Thread(target=send_to_whatsapp, args=(whatsapp_clean,), daemon=True).start()
-        
+        wa_text = reformat_text(original_text, mode="whatsapp")
+        threading.Thread(target=send_to_whatsapp, args=(wa_text,), daemon=True).start()
     else:
-        # If it didn't match your filters, release it from cache to let future accurate edits clear
         with cache_lock:
-            processed_messages_cache.discard(simplified_text)
-        print("⏳ Post did not match job or link keywords. Skipping...")
+            processed_text_cache.discard(simplified_text)
+            for link in valid_job_links:
+                processed_links_cache.discard(link)
 
 def main():
-    # Start server threads right before initializing the live Telethon listener loop
     threading.Thread(target=run_web_server, daemon=True).start()
     threading.Thread(target=clean_old_cache, daemon=True).start()
-    
     client.start()
-    print("Anti-branding dual job bot is running and listening cleanly...")
     client.run_until_disconnected()
 
 if __name__ == '__main__':
