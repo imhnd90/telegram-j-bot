@@ -14,10 +14,11 @@ SOURCE_CHANNELS = [
     '@cd4cd',
     '@teleworksjobs',
     '@wadhefadotcom',
-    '@i8mhnd'
+    '@i8mhnd',
+    '@saudijobs24'
 ]
 
-DESTINATION_CHANNEL = '@sminbox'  
+DESTINATION_CHANNEL = '@sammhnd'  
 
 JOB_KEYWORDS = [
     'stc', 'الاتصالات', 'شركة', 'أرامكو', 'ارامكو', 'بنك', 'سابك', 'وزارة', 'الوزارة', 'حكومي',
@@ -32,15 +33,23 @@ PROMO_KEYWORDS = [
     # Leave empty or add promotional block keywords here if needed later
 ]
 
-client = TelegramClient('job_forwarder_session', API_ID, API_HASH)
+client = TelegramClient('render_cloud_session', API_ID, API_HASH)
+
 
 # 🌟 RENDER PORT BINDING FIX: Dummy web server class
 class DummyServer(BaseHTTPRequestHandler):
     def do_GET(self):
+        # 🌟 FIXED COMPACT WEB RESPONSES FOR CRON-JOB
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
+        self.send_header("Content-Length", "18")
         self.end_headers()
-        self.wfile.write(b"Bot is alive and running!")
+        self.wfile.write(b"Bot is active 24/7")
+
+    def log_message(self, format, *args):
+        return  # Hides ping tracking logs to keep Render console clean
+
+
 
     # Override logging to keep Render console outputs clean
     def log_message(self, format, *args):
