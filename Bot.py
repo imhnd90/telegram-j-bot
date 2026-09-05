@@ -21,13 +21,25 @@ SOURCE_CHANNELS = [
 DESTINATION_CHANNEL = '@sammhnd'  
 
 JOB_KEYWORDS = [
-    'stc', 'الاتصالات', 'شركة', 'أرامكو', 'ارامكو', 'بنك', 'سابك', 'وزارة', 'الوزارة', 'حكومي',
-    'عاجل', 'رسميا', 'رسمياً', 'أعلنت', 'اعلت', 'يعلن', 'تعلن', 'شواغر', 'شاغر', 'شاغرة',
-    'وظيفة', 'وظايف', 'وظائف', 'توظيف', 'تدريب', 'فرصة عمل', 'فرص عمل', 'مطلوب', 'مطلوبة', 
-    'بايثون', 'عن بعد', 'عن_بعد', 'مطور', 'مهندس', 'برمجة', 'برمجيات', 'تقنية', 'معلومات',
-    'python', 'remote', 'developer', 'engineer', 'django', 'backend', 'frontend', 'fullstack',
-    'software', 'hiring', 'vacancy', 'job', 'jobs', 'internship', 'careers', 'career', 'apply'
+    # --- Breaking News & Regulatory Filters (Arabic & English) ---
+    'عاجل', 'رسميا', 'رسمياً', 'وزارة', 'الوزارة', 'الموارد البشرية', 'قرارات', 'قرار', 'توطين', 
+    'سعودة', 'هدف', 'صندوق', 'بيان رسمي', 'تعلن', 'يعلن', 'أعلنت', 'اعلت', 'mhrsd', 'hrdf', 'qiwa',
+    
+    # --- Corporate Entities & Major Giga-Projects ---
+    'شركة', 'أرامكو', 'ارامكو', 'stc', 'الاتصالات', 'نيوم', 'neom', 'سابك', 'البحر الأحمر', 
+    'روشن', 'المربع الجديد', 'بنك', 'مصرف', 'الراجحي', 'الأهلي', 'طيران', 'الخطوط', 'مستشفى',
+    
+    # --- General Employment & Vacancy Types ---
+    'وظيفة', 'وظايف', 'وظائف', 'شواغر', 'شاغر', 'شاغرة', 'توظيف', 'تدريب', 'فرصة عمل', 'فرص عمل', 
+    'مطلوب', 'مطلوبة', 'برنامج', 'حكومي', 'اداري', 'إداري', 'استقبال', 'خدمة عملاء', 'مبيعات',
+    'hiring', 'vacancy', 'job', 'jobs', 'internship', 'career', 'careers', 'apply', 'recruitment',
+
+    # --- On-Site Technical, Field & Corporate Roles ---
+    'مهندس', 'هندسة', 'محاسب', 'محاسبة', 'قانوني', 'محامي', 'تقنية', 'معلومات', 'برمجة', 'مطور',
+    'امن سيبراني', 'ذكاء اصطناعي', 'شبكات', 'سلاسل الإمداد', 'لوجستي', 'مستودع', 'مشتريات',
+    'engineer', 'accounting', 'finance', 'logistics', 'procurement', 'developer', 'python'
 ]
+
 
 PROMO_KEYWORDS = [
     # Leave empty or add promotional block keywords here if needed later
@@ -63,18 +75,29 @@ def run_web_server():
     server.serve_forever()
 
 def reformat_text(raw_text):
-    """Structures text into a beautifully arranged, professional layout"""
+    """Dynamically structures text into an explicit Job Alert or News Flash layout"""
     clean_text = re.sub(r'[*_`~]', '', raw_text).strip()
     
+    # Check if the message is a regulatory update or news breaking phrase
+    text_lower = clean_text.lower()
+    news_triggers = ['عاجل', 'رسميا', 'رسمياً', 'قرارات', 'قرار', 'توطين', 'سعودة', 'الموارد البشرية']
+    
+    if any(trigger in text_lower for trigger in news_triggers):
+        header_title = "🚨 **تحديث سوق العمل | MARKET NEWS FLASH**"
+    else:
+        header_title = "💼 **فرصة عمل جديدة | NEW JOB OPPORTUNITY**"
+    
     arranged_template = (
-        "💼 **فرصة عمل جديدة | NEW JOB OPPORTUNITY**\n"
+        f"{header_title}\n"
         "📢 **قناة: سم مع مهند**\n"
         "──────────────────────\n\n"
         f"{clean_text}\n\n"
         "──────────────────────\n"
-        "🚀 تابعوا **سم مع مهند** للمزيد من الفرص اليومية!"
+        "🚀 تابعوا **سم مع مهند** للمزيد من الفرص والأخبار اليومية!\n\n"
+        "#وظائف #وظائف_السعودية #أخبار_التوظيف #توظيف #سم_مع_مهند"
     )
     return arranged_template
+
 
 @client.on(events.NewMessage(chats=SOURCE_CHANNELS))
 async def filter_and_forward(event):
