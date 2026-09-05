@@ -1,33 +1,33 @@
 import re
 import os
 import threading
+import time
+import requests  # 🌟 Essential for sending the free WhatsApp cloud payload
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from telethon import TelegramClient, events
 from telethon.tl.types import MessageMediaPhoto, MessageEntityTextUrl, MessageEntityUrl
 
 # --- CONFIGURATION ---
-API_ID = 35769422  # <-- Your API ID
-API_HASH = '9f5fdb40f517efb629843d96ddaa5a71'  # <-- Your API Hash
-# 🌟 PASTE YOUR GREEN-API CREDENTIALS HERE:
-GREEN_API_ID = '710522728838'            # <-- Paste your exact ID instance numbers here
-GREEN_API_TOKEN = '6dbb40f208984ebab3908788583748b822b453ad99bb487da5'    # <-- Paste your long apiTokenInstance string here
-WHATSAPP_CHAT_ID = '120363430663266458'   # <-- Paste your copied group/community ID ending in @g.us here
+API_ID = 35769422  
+API_HASH = '9f5fdb40f517efb629843d96ddaa5a71'  
+
+# 🌟 GREEN-API WHATSAPP CREDENTIALS (FILL THESE WITH YOUR DATA)
+GREEN_API_ID = '710522728838'            
+GREEN_API_TOKEN = '6dbb40f208984ebab3908788583748b822b453ad99bb487da5
+'    
+WHATSAPP_CHAT_ID = '120363430663266458'   
 
 SOURCE_CHANNELS = [
-    # Your current existing channels
     '@ewdifh',
     '@cd4cd',
     '@teleworksjobs',
     '@wadhefadotcom',
     '@i8mhnd',
-    
-    # 🌟 NEW: Master Job & Labor Market News Channels
     '@jobs4ksa',
     '@hrgksa',
     '@saudijobs24',
     '@jobs2ksa'
 ]
-
 
 DESTINATION_CHANNEL = '@sammhnd'  
 
@@ -51,30 +51,22 @@ JOB_KEYWORDS = [
     'engineer', 'accounting', 'finance', 'logistics', 'procurement', 'developer', 'python'
 ]
 
+PROMO_KEYWORDS = []
 
-PROMO_KEYWORDS = [
-    # Leave empty or add promotional block keywords here if needed later
-]
+# 🌟 ANTI-DUPLICATE CACHE DICTIONARY
+processed_messages_cache = set()
+cache_lock = threading.Lock()
 
 client = TelegramClient('render_cloud_session', API_ID, API_HASH)
 
-
-# 🌟 RENDER PORT BINDING FIX: Dummy web server class
 class DummyServer(BaseHTTPRequestHandler):
     def do_GET(self):
-        # 🌟 FIXED COMPACT WEB RESPONSES FOR CRON-JOB
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.send_header("Content-Length", "18")
         self.end_headers()
         self.wfile.write(b"Bot is active 24/7")
 
-    def log_message(self, format, *args):
-        return  # Hides ping tracking logs to keep Render console clean
-
-
-
-    # Override logging to keep Render console outputs clean
     def log_message(self, format, *args):
         return
 
@@ -85,11 +77,34 @@ def run_web_server():
     print(f"🌍 Internal web server started on port {port} for Render health checks.")
     server.serve_forever()
 
+def clean_old_cache():
+    """Flushes the duplicate storage set every hour to keep server RAM fast and minimal"""
+    while True:
+        time.sleep(3600)
+        with cache_lock:
+            processed_messages_cache.clear()
+            print("🧹 Internal duplicate message tracking cache cleared successfully.")
+
+def send_to_whatsapp(text_message):
+    """Dispatches the clean text update to your WhatsApp Community completely for free"""
+    url = f"https://green-api.com{GREEN_API_ID}/sendMessage/{GREEN_API_TOKEN}"
+    payload = {
+        "chatId": WHATSAPP_CHAT_ID,
+        "message": text_message
+    }
+    headers = {'Content-Type': 'application/json; charset=utf-8'}
+    try:
+        response = requests.post(url, json=payload, headers=headers, timeout=15)
+        if response.status_code == 200:
+            print("🟢 Successfully broadcasted to your WhatsApp Community!")
+        else:
+            print(f"⚠️ WhatsApp API returned an issue: {response.status_code} - {response.text}")
+    except Exception as e:
+        print(f"❌ Failed to reach Green-API cloud router: {e}")
+
 def reformat_text(raw_text):
     """Dynamically structures text into an explicit Job Alert or News Flash layout"""
     clean_text = re.sub(r'[*_`~]', '', raw_text).strip()
-    
-    # Check if the message is a regulatory update or news breaking phrase
     text_lower = clean_text.lower()
     news_triggers = ['عاجل', 'رسميا', 'رسمياً', 'قرارات', 'قرار', 'توطين', 'سعودة', 'الموارد البشرية']
     
@@ -109,12 +124,21 @@ def reformat_text(raw_text):
     )
     return arranged_template
 
-
 @client.on(events.NewMessage(chats=SOURCE_CHANNELS))
 async def filter_and_forward(event):
     original_text = event.message.message
     if not original_text:
         return
+
+    # 🌟 ANTI-DUPLICATE INTERCEPTION STRATEGY
+    # Formats text structure to check if this core layout has been processed recently
+    simplified_text = "".join(original_text.split()).lower()[:150]
+    
+    with cache_lock:
+        if simplified_text in processed_messages_cache:
+            print("⏳ Duplicate post intercepted from secondary source channel. Skipping...")
+            return
+        processed_messages_cache.add(simplified_text)
 
     searchable_content = [original_text.lower()]
 
@@ -130,32 +154,36 @@ async def filter_and_forward(event):
 
     combined_search_text = " ".join(searchable_content)
 
-    # 1. ANTI-SPAM FILTER
-    if PROMO_KEYWORDS and any(promo in combined_search_text for promo in PROMO_KEYWORDS):
-        print("❌ Blocked a promotional / advertisement post.")
-        return
-
-    # 2. MATCH FILTER
+    # MATCH KEYWORD FILTER
     if any(job in combined_search_text for job in JOB_KEYWORDS):
         formatted_text = reformat_text(original_text)
         
-        # If it's a real attached image file, forward it
+        # 1. Dispatch Post to Your Telegram Destination Channel
         if event.message.media and isinstance(event.message.media, MessageMediaPhoto):
             await client.send_message(DESTINATION_CHANNEL, formatted_text, file=event.message.media)
-            print("📸 Successfully formatted and posted an image-job to 'سم مع مهند'!")
+            print("📸 Successfully formatted and posted an image-job to Telegram!")
         else:
-            # Explicitly set link_preview=False to block external website preview boxes from appearing!
             await client.send_message(DESTINATION_CHANNEL, formatted_text, link_preview=False)
-            print("📝 Successfully posted clean text without external preview boxes!")
+            print("📝 Successfully formatted and posted a text-job to Telegram!")
+        
+        # 2. 🌟 Dispatch Same Post Natively to Your WhatsApp Community
+        # Replaces dual asterisks (Telegram style) with single ones (WhatsApp style bolding)
+        whatsapp_clean = formatted_text.replace('**', '*') 
+        threading.Thread(target=send_to_whatsapp, args=(whatsapp_clean,), daemon=True).start()
+        
     else:
+        # If it didn't match your filters, release it from cache to let future accurate edits clear
+        with cache_lock:
+            processed_messages_cache.discard(simplified_text)
         print("⏳ Post did not match job or link keywords. Skipping...")
 
 def main():
-    # 🌟 Start the background web server thread right before starting Telethon
+    # Start server threads right before initializing the live Telethon listener loop
     threading.Thread(target=run_web_server, daemon=True).start()
+    threading.Thread(target=clean_old_cache, daemon=True).start()
     
     client.start()
-    print("Anti-branding job bot is running and listening cleanly...")
+    print("Anti-branding dual job bot is running and listening cleanly...")
     client.run_until_disconnected()
 
 if __name__ == '__main__':
